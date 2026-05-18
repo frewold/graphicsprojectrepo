@@ -99,9 +99,9 @@ The star was manually designed using fixed coordinate points. If the size of the
 
 
 ##Group members##
-1, FIREWOLD HADIGU..........03222/15
-2, RAHEL GENETU...........01945/16
-3, MUSAB AMAN..............00454/16
-4, TIGIST ASRAT   ........01582/16
-5, SOLOMON BIADG...........02980/16
-6, SINETIBEB BEFIKRU .........02037/16
+1,| FIREWOLD HADIGU..........03222/15|
+2,| RAHEL GENETU...........01945/16|
+3,| MUSAB AMAN..............00454/16|
+4,| TIGIST ASRAT   ........01582/16|
+5,|SOLOMON BIADG...........02980/16|
+6,|SINETIBEB BEFIKRU .........02037/16|
