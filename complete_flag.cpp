@@ -1,6 +1,6 @@
-#include <GL/freeglut.h>
-#include <cmath>
-#include <cstdlib>
+  #include <GL/freeglut.h>
+  #include <cmath>
+  #include <cstdlib>
 
 const float PI = 3.14159265f;
 float wave = 0.0f;
@@ -139,7 +139,7 @@ void reshape(int w, int h)
 
 void update(int)
 {
-    wave += 0.06f;
+    wave = wave + 0.06f;
     glutPostRedisplay();
     glutTimerFunc(16, update, 0);
 }
@@ -152,7 +152,7 @@ void keyboard(unsigned char key, int, int)
         case '+': case '=': zoom += 0.1f; break;
         case '-': case '_': zoom -= 0.1f; if(zoom < 0.2f) zoom = 0.2f; break;
     }
-    glutPostRedisplay();
+ glutPostRedisplay();
 }
 
 int main(int argc, char** argv)
