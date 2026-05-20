@@ -1,9 +1,9 @@
-#include <GL/freeglut.h>
-#include <cmath>
+  #include <GL/freeglut.h>
+  #include <cmath>
 
-const float PI = 3.14159265f;
-float wave = 0.0f;
-int winW = 900, winH = 600;
+   const float PI = 3.14159265f;
+  float wave = 0.0f;
+  int winW = 900, winH = 600;
 
 float getWaveOffset(float x)
 {
@@ -23,9 +23,9 @@ void drawCircle(float cx, float cy, float r)
 
 void drawFlagStripe(float y1, float y2, float r, float g, float b)
 {
-    glColor3f(r, g, b);
-    glBegin(GL_QUADS);
-    for(float x = -1.0f; x <= 1.0f; x += 0.02f)
+     glColor3f(r, g, b);
+     glBegin(GL_QUADS);
+     for(float x = -1.0f; x <= 1.0f; x += 0.02f)
     {
         float o1 = getWaveOffset(x), o2 = getWaveOffset(x + 0.02f);
         glVertex2f(x,        y1 + o1); glVertex2f(x + 0.02f, y1 + o2);
