@@ -1,11 +1,16 @@
 #include <GL/freeglut.h>
 #include <cmath>
 #include <cstdlib>
+#include <cstdio>
 #include <vector>
 
 const float PI = 3.14159265f;
 float wave = 0.0f;
 int activeObj = 0;
+
+const float FLAG_HALF_WIDTH  = 1.40f;
+const float FLAG_HALF_HEIGHT = 0.70f;
+const float FLAG_CIRCLE_R    = 0.34f;
 
 struct Transform { float tx, ty, angle, sx, sy; };
 Transform flagT = { -0.5f, 0.0f, 0.0f, 0.38f, 0.38f };
@@ -49,9 +54,10 @@ void drawTipTri(float tipX, float tipY, float bx1, float by1, float bx2, float b
     glEnd();
 }
 
-void drawStar(float scaleHint)
+void drawStar(float circleRadius, float scaleHint)
 {
-    const float S  = 0.25f / 175.0f;
+    const float S  = circleRadius / 175.0f;
+
     float tx[5]  = {  0.0f,   123.5f,  76.4f, -76.4f,-123.5f };
     float ty[5]  = {-130.0f,  -40.2f, 105.2f, 105.2f, -40.2f };
     float inX[5] = { 29.2f,   47.2f,   0.0f,  -47.2f, -29.2f };
@@ -59,57 +65,67 @@ void drawStar(float scaleHint)
     float rX[5]  = { 88.2f,  142.6f,   0.0f, -142.6f, -88.2f };
     float rY[5]  = {-121.3f,  46.4f, 150.0f,   46.4f,-121.3f };
 
+    const float BASE_LW = 0.014f, BASE_RW = 0.006f;
     float safeScale = (scaleHint > 0.50f) ? scaleHint : 0.50f;
-    float LW = 0.014f / safeScale;
-    float RW = 0.006f / safeScale;
-
-    glColor3f(1.0f, 0.84f, 0.0f);
-    for(int i = 0; i < 5; i++)
-    {
-        int j = (i+2)%5;
-        drawThickLine(tx[i]*S, -ty[i]*S, tx[j]*S, -ty[j]*S, LW);
-    }
-
-    glColor3f(1.0f, 0.84f, 0.0f);
-    for(int i = 0; i < 5; i++)
-    {
-        float tX = tx[i]*S, tY = -ty[i]*S;
-        int ia = (i+2)%5, ib = (i+3)%5;
-        float ax = tx[ia]*S - tX, ay = -ty[ia]*S - tY;
-        float bx = tx[ib]*S - tX, by = -ty[ib]*S - tY;
-        float lA = sqrtf(ax*ax+ay*ay), lB = sqrtf(bx*bx+by*by);
-        if(lA < 0.00001f || lB < 0.00001f) continue;
-        ax/=lA; ay/=lA; bx/=lB; by/=lB;
-        float oAx =  ay*(LW*0.5f), oAy = -ax*(LW*0.5f);
-        float oBx = -by*(LW*0.5f), oBy =  bx*(LW*0.5f);
-        float bisx = oAx+oBx, bisy = oAy+oBy;
-        float bL = sqrtf(bisx*bisx+bisy*bisy);
-        if(bL < 0.00001f) continue;
-        bisx/=bL; bisy/=bL;
-        float dot = oAx*bisx + oAy*bisy;
-        if(fabsf(dot) < 0.00001f) continue;
-        float mL = (LW*0.5f)/dot;
-        drawTipTri(tX+bisx*mL, tY+bisy*mL, tX+oAx, tY+oAy, tX+oBx, tY+oBy);
-    }
+    float LW = BASE_LW / safeScale;
+    float RW = BASE_RW / safeScale;
 
     glColor3f(0.071f, 0.302f, 0.647f);
     glBegin(GL_POLYGON);
-    for(int i = 0; i < 5; i++) glVertex2f(inX[i]*S, -inY[i]*S);
+    for(int i=0;i<5;i++) glVertex2f(inX[i]*S, -inY[i]*S);
     glEnd();
 
     glColor3f(1.0f, 0.84f, 0.0f);
-    for(int i = 0; i < 5; i++)
-        drawThickLine(inX[i]*S, -inY[i]*S, rX[i]*S, -rY[i]*S, RW);
+    for(int i = 0; i < 5; i++) {
+        int j = (i+2)%5;
+        drawThickLine(tx[i]*S,-ty[i]*S, tx[j]*S,-ty[j]*S, LW);
+    }
+
+    for(int i = 0; i < 5; i++) {
+        int ia=(i+2)%5, ib=(i+3)%5;
+        float ax=tx[ia]*S-tx[i]*S, ay=-ty[ia]*S+ty[i]*S;
+        float bx=tx[ib]*S-tx[i]*S, by=-ty[ib]*S+ty[i]*S;
+        float lA=sqrtf(ax*ax+ay*ay), lB=sqrtf(bx*bx+by*by);
+        if(lA < 0.000001f || lB < 0.000001f) continue;
+
+        float nAx=(-ay/lA)*LW*.5f, nAy=(ax/lA)*LW*.5f;
+        float nBx=(by/lB)*LW*.5f,  nBy=(-bx/lB)*LW*.5f;
+        float tX=tx[i]*S, tY=-ty[i]*S;
+
+        drawTipTri(tX,tY, tX-nAx,tY-nAy, tX-nBx,tY-nBy);
+
+        float bsx=nAx+nBx, bsy=nAy+nBy;
+        float bL=sqrtf(bsx*bsx+bsy*bsy);
+        if(bL > 0.00001f) {
+            bsx/=bL; bsy/=bL;
+            float nAL=sqrtf(nAx*nAx+nAy*nAy);
+            float dot=(nAx/nAL)*bsx+(nAy/nAL)*bsy;
+            if(fabsf(dot) > 0.00001f) {
+                float mL=(LW*.5f)/dot;
+                float maxMiter = LW * 4.0f;
+                if(mL > maxMiter) mL = maxMiter;
+                if(mL > 0.0f) {
+                    float c1x=tX+nAx, c1y=tY+nAy;
+                    float c2x=tX+nBx, c2y=tY+nBy;
+                    drawTipTri(tX+bsx*mL,tY+bsy*mL, c1x,c1y, c2x,c2y);
+                }
+            }
+        }
+    }
+
+    glColor3f(1.0f, 0.84f, 0.0f);
+    for(int i=0;i<5;i++)
+        drawThickLine(inX[i]*S,-inY[i]*S, rX[i]*S,-rY[i]*S, RW);
 }
 
 void drawFlagStripe(float y1, float y2, float r, float g, float b)
 {
-    glColor3f(r, g, b);
+    glColor3f(r,g,b);
     glBegin(GL_QUADS);
-    for(float x = -1.0f; x <= 1.0f; x += 0.02f) {
-        float o1 = getWaveOffset(x), o2 = getWaveOffset(x + 0.02f);
-        glVertex2f(x,        y1+o1); glVertex2f(x+0.02f, y1+o2);
-        glVertex2f(x+0.02f,  y2+o2); glVertex2f(x,       y2+o1);
+    for(float x=-FLAG_HALF_WIDTH; x<=FLAG_HALF_WIDTH; x+=0.02f) {
+        float o1=getWaveOffset(x), o2=getWaveOffset(x+0.02f);
+        glVertex2f(x,       y1+o1); glVertex2f(x+0.02f,y1+o2);
+        glVertex2f(x+0.02f,y2+o2); glVertex2f(x,       y2+o1);
     }
     glEnd();
 }
@@ -121,15 +137,16 @@ void drawFlag()
     glRotatef(flagT.angle, 0.0f, 0.0f, 1.0f);
     glScalef(flagT.sx, flagT.sy, 1.0f);
 
-    drawFlagStripe( 0.33f,  1.0f,  0.0f, 0.6f, 0.2f);
-    drawFlagStripe(-0.33f,  0.33f, 1.0f, 0.8f, 0.0f);
-    drawFlagStripe(-1.0f,  -0.33f, 0.8f, 0.0f, 0.0f);
+    const float stripeH = (FLAG_HALF_HEIGHT * 2.0f) / 3.0f;
+    drawFlagStripe( FLAG_HALF_HEIGHT - stripeH,  FLAG_HALF_HEIGHT,            0.0f, 0.6f, 0.2f);
+    drawFlagStripe(-stripeH * 0.5f,              stripeH * 0.5f,              1.0f, 0.8f, 0.0f);
+    drawFlagStripe(-FLAG_HALF_HEIGHT,           -FLAG_HALF_HEIGHT + stripeH, 0.8f, 0.0f, 0.0f);
 
     glPushMatrix();
     glTranslatef(0.0f, getWaveOffset(0.0f), 0.0f);
     glColor3f(0.071f, 0.302f, 0.647f);
-    drawCircle(0.0f, 0.0f, 0.25f);
-    drawStar(flagT.sx);
+    drawCircle(0.0f, 0.0f, FLAG_CIRCLE_R);
+    drawStar(FLAG_CIRCLE_R, flagT.sx);
     glPopMatrix();
 
     glPopMatrix();
@@ -139,10 +156,10 @@ struct Pt { float x, y; };
 
 void bez(std::vector<Pt>& v,
          float x0, float y0, float x1, float y1,
-         float x2, float y2, float x3, float y3, int n = 50)
+         float x2, float y2, float x3, float y3, int n=50)
 {
-    for(int i = 0; i <= n; i++) {
-        float t = (float)i/n, u = 1.0f-t;
+    for(int i=0;i<=n;i++) {
+        float t=(float)i/n, u=1.0f-t;
         float u3=u*u*u, u2t=3*u*u*t, ut2=3*u*t*t, t3=t*t*t;
         v.push_back({u3*x0+u2t*x1+ut2*x2+t3*x3,
                      u3*y0+u2t*y1+ut2*y2+t3*y3});
@@ -160,7 +177,7 @@ void drawNike()
     glTranslatef(-75.0f, 50.0f, 0.0f);
     glScalef(1.0f, -1.0f, 1.0f);
 
-    float cx = 42.741f, cy = 71.477f;
+    float cx=42.741f, cy=71.477f;
     std::vector<Pt> bot, top;
 
     bez(bot,cx,cy, cx-9.881f,cy+11.604f, cx-19.355f,cy+25.994f, cx-19.45f,cy+36.75f);
@@ -179,17 +196,17 @@ void drawNike()
     bez(top,cx,cy, cx-0.504f,cy+0.126f, cx-112.603f,cy+30.505f, cx-112.603f,cy+30.505f);
     cx-=112.603f; cy+=30.505f;
     cx-=6.524f; cy+=0.934f;
-    top.push_back({cx, cy});
+    top.push_back({cx,cy});
     bez(top,cx,cy, cx-8.615f,cy+0.051f, cx-16.281f,cy-4.731f, cx-16.219f,cy-14.808f);
     cx-=16.219f; cy-=14.808f;
     bez(top,cx,cy, cx+0.024f,cy-3.943f, cx+1.231f,cy-8.698f, cx+4.028f,cy-14.291f);
 
     glColor3f(0.0f, 0.0f, 0.0f);
     glBegin(GL_QUAD_STRIP);
-    size_t bS = bot.size(), tS = top.size(), st = (bS > tS) ? bS : tS;
-    for(size_t i = 0; i < st; i++) {
-        size_t bi = (i*(bS-1))/(st-1);
-        size_t ti = (st-1-i)*(tS-1)/(st-1);
+    size_t bS=bot.size(), tS=top.size(), st=(bS>tS)?bS:tS;
+    for(size_t i=0; i<st; i++) {
+        size_t bi=(i*(bS-1))/(st-1);
+        size_t ti=(st-1-i)*(tS-1)/(st-1);
         glVertex2f(bot[bi].x, bot[bi].y);
         glVertex2f(top[ti].x, top[ti].y);
     }
@@ -198,7 +215,14 @@ void drawNike()
     glPopMatrix();
 }
 
-void drawDivider()
+void drawText(float x, float y, const char* s)
+{
+    glRasterPos2f(x, y);
+    for(const char* p=s; *p; p++)
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, *p);
+}
+
+void drawHUD()
 {
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
@@ -215,6 +239,10 @@ void drawDivider()
         glVertex2f((float)winW*0.5f, (float)winH);
     glEnd();
     glLineWidth(1.0f);
+
+    glColor3f(0.3f, 0.3f, 0.3f);
+    drawText((float)winW*0.25f - 50, (float)winH - 18, "Ethiopian Flag");
+    drawText((float)winW*0.75f - 40, (float)winH - 18, "Nike Swoosh");
 
     glMatrixMode(GL_PROJECTION); glPopMatrix();
     glMatrixMode(GL_MODELVIEW);  glPopMatrix();
@@ -234,7 +262,7 @@ void display()
 
     drawFlag();
     drawNike();
-    drawDivider();
+    drawHUD();
 
     glutSwapBuffers();
 }
@@ -242,7 +270,7 @@ void display()
 void reshape(int w, int h)
 {
     winW = w;
-    winH = (h > 0) ? h : 1;
+    winH = (h>0) ? h : 1;
     glutPostRedisplay();
 }
 
@@ -255,8 +283,8 @@ void update(int)
 
 void keyboard(unsigned char key, int, int)
 {
-    Transform& t = (activeObj == 0) ? flagT : nikeT;
-    const float dT = 0.05f, dA = 5.0f, dS = 0.05f;
+    Transform& t = (activeObj==0) ? flagT : nikeT;
+    const float dT=0.05f, dA=5.0f, dS=0.05f;
     switch(key)
     {
         case 'w': case 'W': t.ty += dT; break;
@@ -268,8 +296,11 @@ void keyboard(unsigned char key, int, int)
         case '+': case '=': t.sx += dS; t.sy += dS; break;
         case '-': case '_':
             t.sx -= dS; t.sy -= dS;
-            if(activeObj == 0) { if(t.sx < 0.50f) { t.sx = 0.50f; t.sy = 0.50f; } }
-            else               { if(t.sx < 0.05f) { t.sx = 0.05f; t.sy = 0.05f; } }
+            if(activeObj==0) {
+                if(t.sx < 0.50f) { t.sx=0.50f; t.sy=0.50f; }
+            } else {
+                if(t.sx < 0.05f) { t.sx=0.05f; t.sy=0.05f; }
+            }
             break;
         case '\t': activeObj = 1 - activeObj; break;
         case 'r': case 'R':
@@ -283,8 +314,8 @@ void keyboard(unsigned char key, int, int)
 
 void specialKeys(int key, int, int)
 {
-    Transform& t = (activeObj == 0) ? flagT : nikeT;
-    const float dT = 0.05f;
+    Transform& t = (activeObj==0) ? flagT : nikeT;
+    const float dT=0.05f;
     switch(key) {
         case GLUT_KEY_UP:    t.ty += dT; break;
         case GLUT_KEY_DOWN:  t.ty -= dT; break;
@@ -299,7 +330,7 @@ int main(int argc, char** argv)
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
     glutInitWindowSize(winW, winH);
-    glutCreateWindow("Ethiopian Flag  |  Nike Swoosh");
+    glutCreateWindow("Ethiopian Flag  |  Nike Swoosh  --  Transformations Demo");
 
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
