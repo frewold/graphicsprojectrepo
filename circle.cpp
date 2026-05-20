@@ -36,36 +36,36 @@ void drawFlagStripe(float y1, float y2, float r, float g, float b)
 
 void display()
 {
-    glClear(GL_COLOR_BUFFER_BIT);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+     glClear(GL_COLOR_BUFFER_BIT);
+     glMatrixMode(GL_MODELVIEW);
+     glLoadIdentity();
 
     drawFlagStripe( 0.33f,  1.0f,  0.0f, 0.6f, 0.2f);
     drawFlagStripe(-0.33f,  0.33f, 1.0f, 0.8f, 0.0f);
     drawFlagStripe(-1.0f,  -0.33f, 0.8f, 0.0f, 0.0f);
 
-    float cw = getWaveOffset(0.0f);
-    glPushMatrix();
-    glTranslatef(0.0f, cw, 0.0f);
-    glColor3f(0.071f, 0.302f, 0.647f);
-    drawCircle(0.0f, 0.0f, 0.25f);
-    glPopMatrix();
+     float cw = getWaveOffset(0.0f);
+     glPushMatrix();
+     glTranslatef(0.0f, cw, 0.0f);
+     glColor3f(0.071f, 0.302f, 0.647f);
+     drawCircle(0.0f, 0.0f, 0.25f);
+     glPopMatrix();
 
     glutSwapBuffers();
 }
 
 void reshape(int w, int h)
 {
-    winW = w; winH = (h > 0) ? h : 1;
-    glViewport(0, 0, winW, winH);
-    glutPostRedisplay();
+     winW = w; winH = (h > 0) ? h : 1;
+     glViewport(0, 0, winW, winH);
+     glutPostRedisplay();
 }
 
 void update(int)
 {
-    wave += 0.06f;
-    glutPostRedisplay();
-    glutTimerFunc(16, update, 0);
+     wave = wave + 0.06f;
+     glutPostRedisplay();
+     glutTimerFunc(16, update, 0);
 }
 
 int main(int argc, char** argv)
